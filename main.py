@@ -276,3 +276,13 @@ def Discriminator():
 
     return tf.keras.Model(inputs=[inp_l, inp_r, tar], outputs=last)
 discriminator = Discriminator()
+
+# Discriminator evaluation result
+disc_out = discriminator([xl_img[tf.newaxis, ...], xr_img[tf.newaxis, ...], gen_output], training=False)
+
+fig, ax = plt.subplots(1, 3, figsize=(8, 4))
+ax[0].imshow((xl_img+1)/2)
+ax[1].imshow((xr_img+1)/2)
+ax[2].imshow(disc_out[0, ..., -1]*200, vmin=-20, vmax=20, cmap='RdBu_r')  #*100
+plt.tight_layout()
+plt.savefig('figure_3.png')
