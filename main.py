@@ -192,3 +192,56 @@ up_model = upsample(3, 4)
 up_result = up_model(down_result)
 print("Upsample shape result: ", up_result.shape)
 
+# Generator architecture definition
+def Generator():
+    '''
+    UNet
+    '''
+
+    # Capas que la componen
+    xl_input = tf.keras.layers.Input(shape=INPUT_DIM)
+    xr_input = tf.keras.layers.Input(shape=INPUT_DIM)
+    down_stack = [
+        downsample(64, 4, apply_batchnorm=False),  # (batch_size, 128, 128, 64)
+        downsample(128, 4),  # (batch_size, 64,  64,  128)
+        downsample(256, 4),  # (batch_size, 32,  32,  256)
+        downsample(512, 4),  # (batch_size, 16,  16,  512)
+        downsample(512, 4),  # (batch_size, 8,   8,   512)
+        downsample(512, 4),  # (batch_size, 4,   4,   512)
+        downsample(512, 4),  # (batch_size, 2,   2,   512)
+        downsample(512, 4),  # (batch_size, 1,   1,   512)
+    ]
+
+    up_stack = [
+        upsample(512, 4, apply_dropout=True),  # (batch_size, 2,    2,  1024)
+        upsample(512, 4, apply_dropout=True),  # (batch_size, 4,    4,  1024)
+        upsample(512, 4, apply_dropout=True),  # (batch_size, 8,    8,  1024)
+        upsample(512, 4),  # (batch_size, 16,   16, 1024)
+        upsample(256, 4),  # (batch_size, 32,   32, 512)
+        upsample(128, 4),  # (batch_size, 64,   64, 256)
+        upsample(64, 4),  # (batch_size, 128, 128, 128)
+    ]
+
+    initializer = tf.random_normal_initializer(0., 0.02)
+    last = tf.keras.layers.Conv2DTranspose(OUTPUT_CHANNELS, 4,
+                                           strides=2,
+                                           padding='same',
+                                           kernel_initializer=initializer,
+                                           activation='tanh')  # (batch_size, 256, 256, 3)
+
+    # pipeline de procesamiento
+    x = tf.keras.layers.Concatenate(axis=3)([xl_input, xr_input])
+    # Codificador
+    skips = []
+    for down in down_stack:
+        x = down(x)
+        skips.append(x)  # se agrega a una lista la salida cada vez que se desciende en el generador
+    skips = reversed(skips[:-1])
+    # Decodificador
+    for up, skip in zip(up_stack, skips):
+        x = up(x)
+        x = tf.keras.layers.Concatenate()([x, skip])
+
+    x = last(x)
+
+    return tf.keras.Model(inputs=[xl_input, xr_input], outputs=x)
