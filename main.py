@@ -406,7 +406,7 @@ def fit(train_xy, test_xy, steps):
                 print(f'Time taken for 1000 steps: {time.time() - start:.2f} sec\n')
 
             start = time.time()
-            generate_images(generator, xl, xr, y)
+            generate_images(f"trainstep_{step}.png", generator, xl, xr, y)
             print(f"Step: {step // 1000}k")
 
         # paso de entrenamiento
