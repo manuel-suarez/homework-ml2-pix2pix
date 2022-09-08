@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import pathlib
 import time
 import datetime
-from IPython import display
 
 
 import tensorflow as tf
