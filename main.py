@@ -287,7 +287,7 @@ ax[1].imshow((xr_img+1)/2)
 ax[2].imshow(disc_out[0, ..., -1]*200, vmin=-20, vmax=20, cmap='RdBu_r')  #*100
 plt.tight_layout()
 plt.savefig('figure_3.png')
-exit(1)
+
 # Losses
 loss_object = tf.keras.losses.BinaryCrossentropy(from_logits=True)
 
