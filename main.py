@@ -390,3 +390,30 @@ def train_step(left_image, right_image, target, step):
         tf.summary.scalar('gen_gan_loss', gen_gan_loss, step=ss)
         tf.summary.scalar('gen_l1_loss', gen_l1_loss, step=ss)
         tf.summary.scalar('disc_loss', disc_loss, step=ss)
+
+# Training function
+def fit(train_xy, test_xy, steps):
+    # toma un lote, batch de pares (x,y)
+    xl, xr, y = next(iter(test_xy.take(1)))
+    start = time.time()
+
+    for step, (xl, xr, y) in train_xy.repeat().take(steps).enumerate():
+
+        # muestra avance en la texturización
+        if (step) % 1000 == 0:
+            if step != 0:
+                print(f'Time taken for 1000 steps: {time.time() - start:.2f} sec\n')
+
+            start = time.time()
+            generate_images(generator, xl, xr, y)
+            print(f"Step: {step // 1000}k")
+
+        # paso de entrenamiento
+        train_step(xl, xr, y, step)
+        if (step + 1) % 10 == 0: print('.', end='', flush=True)
+
+        # Checkpoint every 5k steps
+        if (step + 1) % 5000 == 0:
+            checkpoint.save(file_prefix=checkpoint_prefix)
+
+fit(train_xy, test_xy, steps=5000)
