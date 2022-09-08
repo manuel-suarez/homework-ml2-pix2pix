@@ -278,6 +278,7 @@ def Discriminator():
 discriminator = Discriminator()
 
 # Discriminator evaluation result
+gen_output = generator([xl_img[tf.newaxis, ...], xr_img[tf.newaxis, ...]], training=False)
 disc_out = discriminator([xl_img[tf.newaxis, ...], xr_img[tf.newaxis, ...], gen_output], training=False)
 
 fig, ax = plt.subplots(1, 3, figsize=(8, 4))
