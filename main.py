@@ -324,3 +324,27 @@ checkpoint = tf.train.Checkpoint(generator_optimizer=generator_optimizer,
                                  generator=generator,
                                  discriminator=discriminator)
 
+# Auxiliary function for previsualizing during training
+def generate_images(fname, model, xl_input, xr_input, y_input):
+    '''
+    Con training=True se obtienen las metricas sobre el Lote.
+    En otro caso, no se evaluan y se regresan las del entrenamiento.
+    '''
+    y_pred = model([xl_input, xr_input], training=True)
+
+    plt.figure(figsize=(15, 15))
+    display_list = [y_input[0][:, :, 0], xl_input[0], xr_input[0], y_pred[0][:, :, 0]]
+    title = ['Objetivo, $y$', 'Left $x$', 'Right $x$', 'p2p  $x^\prime$']
+    for i in range(4):
+        plt.subplot(1, 4, i + 1)
+        if i < 4:
+            plt.title(title[i])
+        # Getting the pixel values in the [0, 1] range to plot.
+        plt.imshow((display_list[i] + 1) / 2)
+        plt.axis('off')
+    plt.savefig(fname)
+
+for xl_input, xr_input, y_input in train_xy.take(1):
+    generate_images(generator, xl_input, xr_input, y_input)
+    print(xl_input.shape, xr_input.shape, y_input.shape)
+    break
