@@ -138,3 +138,57 @@ test_xy = test_xy.batch(BATCH_SIZE)
 for xl, xr, y in train_xy.take(3):
     display_images('figure_2.png', xl, xr, y, rows=3)
     break
+
+# Model architecture definition
+def downsample(filters, size, apply_batchnorm=True):
+    '''
+    Bloque de codificación (down-sampling)
+    '''
+    initializer = tf.random_normal_initializer(0., 0.02)
+
+    result = tf.keras.Sequential()
+    result.add(tf.keras.layers.Conv2D(filters           = filters,
+                                      kernel_size       = size,
+                                      strides           = 2,
+                                      padding           = 'same',
+                                      kernel_initializer= initializer,
+                                      use_bias          = False))
+
+    if apply_batchnorm:
+        result.add(tf.keras.layers.BatchNormalization())
+
+    result.add(tf.keras.layers.LeakyReLU())
+
+    return result
+
+down_model  = downsample(3, 4)
+down_result = down_model(tf.expand_dims(xl_img, 0))
+print("Downsample shape result: ", down_result.shape)
+
+def upsample(filters, size, apply_dropout=False):
+    '''
+    Bloque de decodicación (up-sampling)
+    '''
+    initializer = tf.random_normal_initializer(0., 0.02)
+
+    result = tf.keras.Sequential()
+    result.add(tf.keras.layers.Conv2DTranspose(filters           = filters,
+                                               kernel_size       = size,
+                                               strides           = 2,
+                                               padding           = 'same',
+                                               kernel_initializer= initializer,
+                                               use_bias          = False))
+
+    result.add(tf.keras.layers.BatchNormalization())
+
+    if apply_dropout:
+        result.add(tf.keras.layers.Dropout(0.5))
+
+    result.add(tf.keras.layers.ReLU())
+
+    return result
+
+up_model = upsample(3, 4)
+up_result = up_model(down_result)
+print("Upsample shape result: ", up_result.shape)
+
