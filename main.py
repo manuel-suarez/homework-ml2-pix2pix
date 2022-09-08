@@ -114,3 +114,27 @@ for i in range(3):
 print(xl_imgs[0].shape, xr_imgs[0].shape, y_imgs[0].shape)
 
 display_images('figure_1.png', xl_imgs, xr_imgs, y_imgs, rows=3)
+
+# Datasets definition
+idx = int(BUFFER_SIZE*.8)
+
+train_xl = tf.data.Dataset.list_files(xl_files[:idx], shuffle=False)
+train_xr = tf.data.Dataset.list_files(xr_files[:idx], shuffle=False)
+train_y = tf.data.Dataset.list_files(y_files[:idx], shuffle=False)
+
+test_xl = tf.data.Dataset.list_files(xl_files[idx:], shuffle=False)
+test_xr = tf.data.Dataset.list_files(xr_files[idx:], shuffle=False)
+test_y = tf.data.Dataset.list_files(y_files[idx:], shuffle=False)
+
+train_xy = tf.data.Dataset.zip((train_xl, train_xr, train_y))
+train_xy = train_xy.shuffle(buffer_size=idx, reshuffle_each_iteration=True)
+train_xy = train_xy.map(load_images, num_parallel_calls=tf.data.AUTOTUNE)
+train_xy = train_xy.batch(BATCH_SIZE)
+
+test_xy = tf.data.Dataset.zip((test_xl, test_xr, test_y))
+test_xy = test_xy.map(load_images, num_parallel_calls=tf.data.AUTOTUNE)
+test_xy = test_xy.batch(BATCH_SIZE)
+
+for xl, xr, y in train_xy.take(3):
+    display_images('figure_2.png', xl, xr, y, rows=3)
+    break
