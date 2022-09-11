@@ -414,7 +414,19 @@ def fit(train_xy, test_xy, steps):
         if (step + 1) % 10 == 0: print('.', end='', flush=True)
 
         # Checkpoint every 5k steps
-        if (step + 1) % 5000 == 0:
+        if (step % 5000 == 0) and (step > 0):
             checkpoint.save(file_prefix=checkpoint_prefix)
 
 fit(train_xy, test_xy, steps=100000)
+
+# Restoring the latest checkpoint in checkpoint_dir
+chkpnt = tf.train.latest_checkpoint(checkpoint_dir)
+chkpnt = './training_checkpoints/ckpt-2'
+checkpoint.restore(chkpnt)
+
+teststep = 0
+for xl, xr, y in test_xy.take(8):
+    generate_images(f"teststep_{teststep}.png", generator, xl, xr, y)
+    teststep = teststep + 1
+
+generator.save_weights('generator_weights.h5')
