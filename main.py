@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import pathlib
 import time
 import datetime
-
+import pickle
 
 import tensorflow as tf
 from tensorflow import keras
@@ -357,7 +357,7 @@ summary_writer = tf.summary.create_file_writer(
 
 # Training step
 @tf.function
-def train_step(left_image, right_image, target, step):
+def train_step(left_image, right_image, target, test_left_image, test_right_image, test_target, step):
     '''
     Cálculos realizados durante un paso del entrenamiento
 
@@ -385,6 +385,20 @@ def train_step(left_image, right_image, target, step):
     generator_optimizer.apply_gradients(zip(generator_gradients, generator.trainable_variables))
     discriminator_optimizer.apply_gradients(zip(discriminator_gradients, discriminator.trainable_variables))
 
+    # Registramos las operaciones de las métricas del conjunto de evaluación
+    with tf.GradientTape() as test_gen_tape, tf.GradientTape() as test_disc_tape:
+        # Generamos campo de disparidades sintético
+        test_gen_output = generator([test_left_image, test_right_image], training=True)
+        # Obtenemos salida del discriminador con el campo real y sintético de
+        # disparidades
+        test_disc_real_output = discriminator([test_left_image, test_right_image, test_target], training=True)
+        test_disc_generated_output = discriminator([test_left_image, test_right_image, test_gen_output], training=True)
+        # Obtenemos evaluación de las funciones de costo para el generador y el
+        # discriminador
+        test_gen_total_loss, test_gen_gan_loss, test_gen_l1_loss = generator_loss(test_disc_generated_output,
+                                                                                  test_gen_output, test_target)
+        test_disc_loss = discriminator_loss(test_disc_real_output, test_disc_generated_output)
+
     with summary_writer.as_default():
         ss = step // 1000
         tf.summary.scalar('gen_total_loss', gen_total_loss, step=ss)
@@ -392,13 +406,26 @@ def train_step(left_image, right_image, target, step):
         tf.summary.scalar('gen_l1_loss', gen_l1_loss, step=ss)
         tf.summary.scalar('disc_loss', disc_loss, step=ss)
 
+    return gen_total_loss, disc_loss, test_gen_total_loss, test_disc_loss
+
 # Training function
 def fit(train_xy, test_xy, steps):
     # toma un lote, batch de pares (x,y)
     xl, xr, y = next(iter(test_xy.take(1)))
     start = time.time()
 
-    for step, (xl, xr, y) in train_xy.repeat().take(steps).enumerate():
+    # Emulamos un objeto history para visualizar las métricas del proceso
+    # de entrenamiento
+    history = {
+        # Train set
+        'train_gen_loss': np.zeros(steps),
+        'train_disc_loss': np.zeros(steps),
+        # Validation set
+        'test_gen_loss': np.zeros(steps),
+        'test_disc_loss': np.zeros(steps)
+    }
+
+    for (step, (xl, xr, y)), (xtl, xtr, yt) in zip(train_xy.repeat().take(steps).enumerate(), test_xy.repeat().take(steps)):
 
         # muestra avance en la texturización
         if ((step + 1) % 10000 == 0) and (step > 0):
@@ -409,14 +436,23 @@ def fit(train_xy, test_xy, steps):
             generate_images(f"trainstep_{step+1}.png", generator, xl, xr, y)
             print(f"Step: {(step+1) // 1000}k")
 
-        # paso de entrenamiento
-        train_step(xl, xr, y, step)
+        # Ejecutamos el paso de entrenamiento
+        gen_loss, disc_loss, test_gen_loss, test_disc_loss = train_step(xl, xr, y, xtl, xtr, yt, step)
+
+        history['train_gen_loss'][step] = gen_loss
+        history['train_disc_loss'][step] = disc_loss
+        history['test_gen_loss'][step] = test_gen_loss
+        history['test_disc_loss'][step] = test_disc_loss
+
         if (step + 1) % 10 == 0: print('.', end='', flush=True)
 
         # Checkpoint every 20k steps
         if ((step + 1) % 20000 == 0) and (step > 0):
             checkpoint.save(file_prefix=checkpoint_prefix)
 
-fit(train_xy, test_xy, steps=200000)
+history = fit(train_xy, test_xy, steps=2000)
 
-generator.save_weights('generator_weights_200000.h5')
+with open('history.pickle', 'wb') as handle:
+    pickle.dump(history, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+generator.save_weights('generator_weights_2000.h5')
