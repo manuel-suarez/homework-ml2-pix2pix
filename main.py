@@ -401,7 +401,7 @@ def fit(train_xy, test_xy, steps):
     for step, (xl, xr, y) in train_xy.repeat().take(steps).enumerate():
 
         # muestra avance en la texturización
-        if (step) % 1000 == 0:
+        if ((step + 1) % 10000 == 0) and (step > 0):
             if step != 0:
                 print(f'Time taken for 1000 steps: {time.time() - start:.2f} sec\n')
 
@@ -413,20 +413,10 @@ def fit(train_xy, test_xy, steps):
         train_step(xl, xr, y, step)
         if (step + 1) % 10 == 0: print('.', end='', flush=True)
 
-        # Checkpoint every 5k steps
-        if (step % 5000 == 0) and (step > 0):
+        # Checkpoint every 20k steps
+        if ((step + 1) % 20000 == 0) and (step > 0):
             checkpoint.save(file_prefix=checkpoint_prefix)
 
-fit(train_xy, test_xy, steps=100000)
+fit(train_xy, test_xy, steps=200000)
 
-# Restoring the latest checkpoint in checkpoint_dir
-chkpnt = tf.train.latest_checkpoint(checkpoint_dir)
-chkpnt = './training_checkpoints/ckpt-2'
-checkpoint.restore(chkpnt)
-
-teststep = 0
-for xl, xr, y in test_xy.take(8):
-    generate_images(f"teststep_{teststep}.png", generator, xl, xr, y)
-    teststep = teststep + 1
-
-generator.save_weights('generator_weights.h5')
+generator.save_weights('generator_weights_200000.h5')
