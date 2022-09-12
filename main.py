@@ -452,7 +452,7 @@ def fit(train_xy, test_xy, steps):
 
         return history
 
-steps = 300
+steps = 200
 history = fit(train_xy, test_xy, steps=steps)
 
 with open(f"history_{steps}.pickle", 'wb') as handle:
