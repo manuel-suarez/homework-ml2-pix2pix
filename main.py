@@ -450,9 +450,10 @@ def fit(train_xy, test_xy, steps):
         if ((step + 1) % 20000 == 0) and (step > 0):
             checkpoint.save(file_prefix=checkpoint_prefix)
 
-history = fit(train_xy, test_xy, steps=2000)
+steps = 300
+history = fit(train_xy, test_xy, steps=steps)
 
-with open('history.pickle', 'wb') as handle:
-    pickle.dump(history, handle, protocol=pickle.HIGHEST_PROTOCOL)
+with open(f"history_{steps}.pickle", 'wb') as handle:
+    pickle.dump(history, handle)
 
-generator.save_weights('generator_weights_2000.h5')
+generator.save_weights(f"generator_weights_{steps}.h5")
