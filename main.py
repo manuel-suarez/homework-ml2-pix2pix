@@ -450,6 +450,8 @@ def fit(train_xy, test_xy, steps):
         if ((step + 1) % 20000 == 0) and (step > 0):
             checkpoint.save(file_prefix=checkpoint_prefix)
 
+        return history
+
 steps = 300
 history = fit(train_xy, test_xy, steps=steps)
 
